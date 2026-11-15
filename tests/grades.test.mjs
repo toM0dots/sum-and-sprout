@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateGrade,GRADES} from '../grades.js';
 import {topics,matches,seededRandom} from '../math.js';
-import {createPractice,createDaily,setGrade,setOperation,submitAnswer,nextQuestion,prepareSession,levelProgress} from '../practice.js';
+import {createPractice,createDaily,setGrade,setOperation,submitAnswer,nextQuestion,prepareSession} from '../practice.js';
 import {makeSave,readSave,importSave} from '../saves.js';
 import {playerKey} from '../players.js';
 
@@ -43,15 +43,16 @@ test('Grade 6 bypasses easy problems without fabricating correct answers or cred
   assert.deepEqual(s.session.questions[0],resolved);assert.equal(submitAnswer(s,q.display).status,'ignored');
   nextQuestion(s);assert.equal(s.session.questions[1].grade,2);assert.equal(s.credits,20);
 });
-test('every grade and selected topic grows at 10 and 30 correct, preserving shown questions',()=>{
-  for(const grade of GRADES)for(const [topic] of topics)for(const correct of [9,29]){
-    const s=fresh(grade,correct);s.session=createPractice(topic,correct,grade);
-    const current=structuredClone(s.session.questions[0]);submitAnswer(s,current.display);prepareSession(s);
-    assert.deepEqual(s.session.questions[0],current);nextQuestion(s);
-    assert.equal(s.session.questions[1].grade,grade);assert.equal(s.session.questions[1].topic,topic);
-    assert.equal(s.session.questions[1].challenge,correct===9?1:2);
+test('every grade and topic can step up after three first-try answers, preserving shown questions',()=>{
+  for(const grade of GRADES)for(const [topic] of topics){
+    const s=fresh(grade);s.session=createPractice(topic,0,grade,'divide');
+    for(let i=0;i<3;i++){
+      const current=structuredClone(s.session.questions[i]);submitAnswer(s,current.display);prepareSession(s);
+      assert.deepEqual(s.session.questions[i],current);nextQuestion(s);
+    }
+    assert.equal(s.session.questions[3].band,grade);assert.equal(s.session.questions[3].topic,topic);
+    assert.equal(s.grade,grade,'Starting grade stays unchanged');
   }
-  assert.equal(levelProgress(0,6).label,'Grade 6 · Start');assert.equal(levelProgress(10,6).label,'Grade 6 · Stretch');assert.equal(levelProgress(30,6).label,'Grade 6 · Challenge');
 });
 test('daily questions use grade deterministically without resetting already earned rewards',()=>{
   const s=fresh(6);s.session=createDaily('sam','2026-11-15',0,6);

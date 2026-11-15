@@ -1,3 +1,4 @@
+import {SKILL_KEYS} from './learning.js';
 import {OPERATION_IDS,OPERATIONS} from './operations.js';
 import {topics} from './math.js';
 import {isGrade} from './grades.js';
@@ -24,6 +25,7 @@ function question(q){
   object(q);
   if(!Number.isFinite(q.answer)||Math.abs(q.answer)>1e12)invalid();
   const grading={};if(q.grade!=null){if(!isGrade(q.grade))invalid();grading.grade=q.grade;grading.challenge=count(q.challenge,2);}
+  if(q.band!==undefined)grading.band=count(q.band,7);
   if(q.operation!==undefined)grading.operation=choice(q.operation,OPERATION_IDS);
   return {...grading,topic:choice(q.topic,topicIds),level:count(q.level,2),prompt:text(q.prompt),answer:q.answer,
     display:text(String(q.display),200),hint:text(q.hint),explanation:text(q.explanation),caption:text(q.caption??'')};
@@ -37,6 +39,8 @@ function session(s){
   const result={kind,adaptive:flag(s.adaptive??false),topic:choice(s.topic,[...topicIds,'mixed']),
     questions:s.questions.map(q=>q==null?null:question(q)),index,earned:count(s.earned,200),solved:count(s.solved,s.questions.length),
     resolved:flag(s.resolved),finished:flag(s.finished),hint:flag(s.hint)};
+  if(s.assessed!==undefined)result.assessed=flag(s.assessed);
+  if(s.difficultyChange!==undefined)result.difficultyChange=choice(s.difficultyChange,[-1,0,1]);
   if(s.operation!==undefined)result.operation=choice(s.operation,OPERATIONS.map(o=>o[0]));
   if(s.level!==undefined)result.level=count(s.level,2);
   if(s.result!=null)result.result=choice(s.result,['correct','revealed']);
@@ -56,6 +60,13 @@ function cleanState(value){
   const s=object(value),result={};
   if(s.grade!=null){if(!isGrade(s.grade))invalid();result.grade=s.grade;}else result.grade=null;
   for(const key of ['credits','earned','correct','attempts','streak','best'])result[key]=count(s[key]);
+  if(s.learning!==undefined){
+    const l=object(s.learning);choice(l.version,[1]);
+    result.learning={version:1,base:count(l.base,7),skills:dictionary(l.skills,SKILL_KEYS,v=>{
+      object(v);const skill={band:count(v.band,7),right:count(v.right,2),wrong:count(v.wrong,1)};
+      if(skill.right&&skill.wrong)invalid();return skill;
+    })};
+  }
   result.pet=choice(s.pet,pets);
   result.care=dictionary(s.care,pets,v=>number(v,100));
   result.happiness=dictionary(s.happiness??{},pets,v=>number(v,100));

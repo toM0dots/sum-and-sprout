@@ -50,8 +50,8 @@ test('mixed topic practice includes all four operations and dedicated division s
     const s=state(3,topic,'mixed'),seen=new Set();
     for(let i=0;i<5;i++){seen.add(s.session.questions[i].operation);solve(s);nextQuestion(s);}
     assert.deepEqual([...seen].sort(),[...OPERATION_IDS].sort());
-    const growing=state(3,topic,'divide',9);solve(growing);nextQuestion(growing);
-    assert.equal(growing.session.questions[1].challenge,1);assert.equal(growing.session.questions[1].operation,'divide');
+    const growing=state(3,topic,'divide',9);for(let i=0;i<3;i++){solve(growing);nextQuestion(growing);}
+    assert.equal(growing.session.questions[3].band,3);assert.equal(growing.session.questions[3].operation,'divide');
   }
 });
 test('changing operations preserves answered questions and cannot award credit twice',()=>{

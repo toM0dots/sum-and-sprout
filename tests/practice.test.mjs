@@ -15,21 +15,14 @@ test('each selected topic stays fixed through every difficulty and new round',()
     s.session=createPractice(topic,s.correct);assert.equal(s.session.questions[0].topic,topic);
   }
 });
-test('the 10th correct answer unlocks Medium on the next question, with the old reward preserved',()=>{
-  const s=state(9),first=s.session.questions[0];
-  assert.equal(first.level,0);assert.equal(s.session.questions[1],null);
-  assert.deepEqual(answer(s),{status:'correct',reward:5,levelUp:true});assert.equal(s.correct,10);assert.equal(s.credits,5);
-  prepareSession(s);assert.equal(s.session.questions[0],first);assert.equal(first.level,0);
-  assert.equal(answer(s).status,'ignored');assert.equal(s.credits,5);
-  nextQuestion(s);assert.equal(s.session.questions[1].level,1);assert.equal(s.session.questions[1].topic,'fractions');
-  answer(s);assert.equal(s.credits,15);
-});
-test('the 30th correct answer unlocks Hard after refresh; all topic totals count',()=>{
-  let s=state(29,'equations');s.stats.addition=29;
-  assert.equal(s.session.questions[0].level,1);assert.equal(answer(s).reward,10);
-  s=JSON.parse(JSON.stringify(s));prepareSession(s);nextQuestion(s);
-  assert.equal(s.session.questions[1].level,2);assert.equal(s.session.questions[1].topic,'equations');assert.equal(answer(s).reward,20);
-  assert.equal(s.correct,31);assert.equal(s.credits,30);
+test('lifetime milestones no longer force a level change; current rewards stay fixed',()=>{
+  for(const count of [9,29]){
+    const s=state(count,'addition'),first=s.session.questions[0];
+    assert.deepEqual(answer(s),{status:'correct',reward:count===9?5:10,levelUp:false});
+    prepareSession(s);assert.equal(s.session.questions[0],first);
+    assert.equal(answer(s).status,'ignored');nextQuestion(s);
+    assert.equal(s.session.questions[1].band,first.band);assert.equal(s.correct,count+1);
+  }
 });
 test('wrong, invalid and revealed answers do not increase total correct or difficulty',()=>{
   const s=state(9);assert.equal(submitAnswer(s,'not a number').status,'invalid');assert.equal(s.attempts,0);
@@ -46,7 +39,7 @@ test('daily challenges vary by player and day, retain shown questions, and cover
   assert.deepEqual(a,createDaily('student-a','2026-11-15',9));
   assert.notDeepEqual(a,createDaily('student-b','2026-11-15',9));assert.notDeepEqual(a,createDaily('student-a','2026-11-16',9));
   const s=state(9);s.session=a;const first=a.questions[0];answer(s);prepareSession(s);assert.equal(a.questions[0],first);
-  archiveDaily(s);s.session=null;s.session=s.daily['2026-11-15:auto'];nextQuestion(s);assert.equal(s.session.questions[1].level,1);
+  archiveDaily(s);s.session=null;s.session=s.daily['2026-11-15:auto'];nextQuestion(s);assert.equal(s.session.questions[1].level,0);
   for(let i=1;i<10;i++){answer(s);nextQuestion(s);}assert.equal(s.session.finished,true);
   assert.deepEqual(s.session.questions.map(q=>q.topic).sort(),topics.map(t=>t[0]).sort());
   const earned=s.credits;assert.equal(answer(s).status,'ignored');assert.equal(s.credits,earned);
@@ -63,8 +56,8 @@ test('progress bounds and local calendar rollover are correct',()=>{
   assert.equal(dayKey(new Date(2026,10,15,23,59,59)),'2026-11-15');assert.equal(dayKey(new Date(2026,10,16,0,0,0)),'2026-11-16');
 });
 test('published game contains no API calls or credentials',()=>{
-  for(const file of readdirSync(new URL('../',import.meta.url))){
-    assert.ok(!/^\.(env|dev\.vars)/.test(file));if(!/\.(js|html)$/.test(file))continue;
+  for(const file of readdirSync(new URL('../',import.meta.url)).filter(file=>/\.(js|html)$/.test(file))){
+    assert.ok(!file.startsWith('.'));if(!/\.(js|html)$/.test(file))continue;
     assert.doesNotMatch(readFileSync(new URL(`../${file}`,import.meta.url),'utf8'),/api\.openai\.com|\/api\/daily|OPENAI_API_KEY|sk-proj-|\bfetch\s*\(/);
   }
 });

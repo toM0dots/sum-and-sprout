@@ -14,7 +14,7 @@ test('save transfers pets, purchases, statistics, daily seed and a resolved ques
   assert.deepEqual(restored.player,{name:player.name,seed:player.seed});
   for(const key of ['credits','earned','correct','attempts','streak','best','pet','care','happiness','food','owned','wear','stats','needsUpdatedAt','joyAt'])assert.deepEqual(restored.state[key],state[key]);
   assert.equal(submitAnswer(restored.state,String(state.session.questions[0].answer)).status,'ignored');
-  nextQuestion(restored.state);assert.equal(restored.state.session.questions[1].topic,'fractions');assert.equal(restored.state.session.questions[1].level,2);
+  nextQuestion(restored.state);assert.equal(restored.state.session.questions[1].topic,'fractions');assert.equal(restored.state.session.questions[1].level,1);
 });
 test('daily archives and future daily questions survive export/import',()=>{
   const state=fresh(),day='2026-11-15';state.session=createDaily(player.seed,day,state.correct);
