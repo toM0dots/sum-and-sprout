@@ -1,3 +1,4 @@
+import {hasOperations,operationQuestion} from './operations.js';
 export const topics=[['addition','Addition','+','Little sums, big discoveries.','#f4dfb3'],['subtraction','Subtraction','−','Find what’s left behind.','#f4d9ce'],['multiplication','Multiplication','×','Make your numbers multiply.','#dedcf3'],['division','Division','÷','Share a little number magic.','#d6e6d5'],['decimals','Decimals','0.1','Small dots. Endless possibilities.','#d7e8ed'],['fractions','Fractions','½','Put the pieces together.','#f2dcec'],['percentage','Percentages','%','Discover parts of a hundred.','#f4dfb3'],['ratios','Ratios','1:2','Find the perfect balance.','#d6e6d5'],['tricks','Mental math','✦','Clever shortcuts, quicker thinking.','#dedcf3'],['equations','Equations','x','Uncover the mystery number.','#d7e8ed']];
 export const levels=[{name:'Seedling',label:'Easy',reward:5},{name:'Growing',label:'Medium',reward:10},{name:'Blooming',label:'Hard',reward:20}];
 export function parseAnswer(value){const s=String(value).trim().replace(/−/g,'-');if(/^[-+]?\d+\s+\d+\s*\/\s*\d+$/.test(s)){const [whole,n,d]=s.match(/[-+]?\d+/g).map(Number);return d?(whole<0||s.startsWith('-')?-1:1)*(Math.abs(whole)+n/d):NaN;}if(/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)\s*\/\s*[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s)){const [a,b]=s.split('/').map(Number);return b?a/b:NaN;}if(!/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return NaN;return Number(s)}
@@ -71,7 +72,8 @@ export function buildQuestion(topic,level,values) {
   }
   return {topic,level,prompt,caption,answer:tidy(answer),display:display??String(tidy(answer)),hint,explanation};
 }
-export function generate(topic,level,random=Math.random){
+export function generate(topic,level,random=Math.random,operation){
+  if(operation!==undefined&&hasOperations(topic))return {...operationQuestion(topic,[1,3,5][level],operation,random),level};
   return buildQuestion(topic,level,boundsFor(topic,level).map(([lo,hi])=>lo+Math.floor(random()*(hi-lo+1))));
 }
 export function seededRandom(seed){

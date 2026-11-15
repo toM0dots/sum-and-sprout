@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateGrade,GRADES} from '../grades.js';
 import {topics,matches,seededRandom} from '../math.js';
-import {createPractice,createDaily,setGrade,submitAnswer,nextQuestion,prepareSession,levelProgress} from '../practice.js';
+import {createPractice,createDaily,setGrade,setOperation,submitAnswer,nextQuestion,prepareSession,levelProgress} from '../practice.js';
 import {makeSave,readSave,importSave} from '../saves.js';
 import {playerKey} from '../players.js';
 
@@ -36,7 +36,7 @@ test('18,000 grade questions have independently checked answers at every grade a
   }
 });
 test('Grade 6 bypasses easy problems without fabricating correct answers or credits',()=>{
-  const s=fresh();setGrade(s,6);const q=s.session.questions[0];
+  const s=fresh();setGrade(s,6);setOperation(s,'divide');const q=s.session.questions[0];
   assert.equal(s.correct,0);assert.equal(s.credits,0);assert.equal(q.grade,6);assert.equal(q.challenge,0);assert.equal(q.level,2);assert.match(q.prompt,/÷/);
   assert.equal(submitAnswer(s,q.display).reward,20);assert.equal(s.correct,1);assert.equal(s.credits,20);
   const resolved=structuredClone(s.session.questions[0]);setGrade(s,2);

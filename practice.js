@@ -1,3 +1,4 @@
+import {hasOperations,validOperation,OPERATION_IDS} from './operations.js';
 import {topics,levels,generate,seededRandom,matches,parseAnswer} from './math.js';
 
 import {isGrade,CHALLENGES,gradeRewardLevel,generateGrade} from './grades.js';
@@ -23,6 +24,14 @@ export function setGrade(state,grade){
   const s=state.session;
   if(s&&!s.finished&&!s.resolved){s.questions[s.index]=null;s.hint=false;ensureQuestion(s,state.correct,grade);}
 }
+export function setOperation(state,operation){
+  const s=state.session;
+  if(!s||s.kind!=='practice'||s.finished||!hasOperations(s.topic)||!validOperation(operation))return false;
+  if((s.operation||'mixed')===operation)return false;
+  s.operation=operation;
+  if(!s.resolved){s.questions[s.index]=null;s.hint=false;ensureQuestion(s,state.correct,state.grade);}
+  return true;
+}
 export function prepareSession(state){
   const s=state.session;if(!s||s.finished)return;
   // Keep an already shown question and its reward when upgrading an older save.
@@ -40,13 +49,20 @@ export function ensureQuestion(session,correct,grade=null){
   const level=levelForCorrect(correct);
   const random=session.kind==='daily'?seededRandom(`${session.seed}:${i}:${level}${isGrade(grade)?`:grade-${grade}`:''}`):Math.random;
   const topic=session.topic==='mixed'?(session.kind==='daily'?session.topicOrder[i]:topics[Math.floor(random()*topics.length)][0]):session.topic;
-  const q=isGrade(grade)?generateGrade(topic,grade,level,random):generate(topic,level,random);
+  const operation=hasOperations(topic)&&session.kind==='practice'&&session.topic!=='mixed'
+    ?(session.operation&&session.operation!=='mixed'?session.operation:OPERATION_IDS[i%OPERATION_IDS.length]):'mixed';
+  let q;
+  for(let attempt=0;attempt<16;attempt++){
+    q=isGrade(grade)?generateGrade(topic,grade,level,random,operation):generate(topic,level,random,operation);
+    if(!session.questions.some(previous=>previous?.topic===q.topic&&previous.prompt===q.prompt))break;
+  }
   session.questions[i]=q;session.level=level;
   return q;
 }
-export function createPractice(topic,correct,grade=null){
+export function createPractice(topic,correct,grade=null,operation='mixed'){
+  if(!validOperation(operation))throw new Error('Unknown operation');
   if(topic!=='mixed'&&!topics.some(t=>t[0]===topic))throw new Error('Unknown topic');
-  const session={kind:'practice',adaptive:true,topic,questions:Array(5).fill(null),index:0,earned:0,solved:0,resolved:false,finished:false,hint:false};
+  const session={kind:'practice',adaptive:true,topic,operation,questions:Array(5).fill(null),index:0,earned:0,solved:0,resolved:false,finished:false,hint:false};
   ensureQuestion(session,correct,grade);return session;
 }
 export function createDaily(seed,day,correct,grade=null){

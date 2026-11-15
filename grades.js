@@ -1,4 +1,5 @@
 import {topics} from './math.js';
+import {hasOperations,operationQuestion} from './operations.js';
 
 export const GRADES=[1,2,3,4,5,6];
 export const CHALLENGES=['Start','Stretch','Challenge'];
@@ -6,14 +7,13 @@ export const isGrade=g=>GRADES.includes(g);
 export const gradeBand=(grade,challenge)=>grade-1+challenge;
 export const gradeRewardLevel=(grade,challenge)=>Math.min(2,Math.floor(gradeBand(grade,challenge)/2));
 const tidy=n=>Number(n.toFixed(8));
-const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
-const frac=(n,d)=>{const g=gcd(n,d);return d/g===1?String(n/g):`${n/g}/${d/g}`;};
 
 // Broad practice starting points, not a claim of alignment to a particular curriculum.
 // Every grade has two further challenge steps, including Grade 6.
-export function generateGrade(topic,grade,challenge,random=Math.random){
+export function generateGrade(topic,grade,challenge,random=Math.random,operation='mixed'){
   if(!isGrade(grade)||!Number.isInteger(challenge)||challenge<0||challenge>2||!topics.some(t=>t[0]===topic))throw new Error('Invalid grade question');
   const band=gradeBand(grade,challenge),pick=(lo,hi)=>lo+Math.floor(random()*(hi-lo+1));
+  if(hasOperations(topic))return {...operationQuestion(topic,band,operation,random),grade,challenge,level:gradeRewardLevel(grade,challenge)};
   const wholeMax=[9,49,499,4999,49999,999999,4999999,9999999][band];
   let prompt,answer,display,caption='',hint,explanation;
   if(topic==='addition'||topic==='subtraction'){
@@ -38,23 +38,6 @@ export function generateGrade(topic,grade,challenge,random=Math.random){
       const divisor=pick(2,[3,5,12,9,25,49,75,99][band]),q=pick(2,[5,10,12,99,199,299,499,999][band]),extra=pick(12,99);
       answer=q+(band>=5?extra:0);prompt=band>=5?`(${divisor*q} + ${divisor*extra}) ÷ ${divisor}`:`${divisor*q} ÷ ${divisor}`;
       hint=band>=5?'Divide both parts, then add.':'Which number times the divisor makes the total?';
-    }
-  }else if(topic==='decimals'){
-    const scale=band<3?10:100,a=pick(1,band<2?9:band>=6?9999:999),b=pick(1,band<2?9:band>=6?999:99),c=pick(10,399);
-    if(band<4){answer=(a+b)/scale;prompt=`${a/scale} + ${b/scale}`;hint='Line up the decimal points.';}
-    else if(band===4){answer=(a+b-c)/100;prompt=`${a/100} + ${b/100} − ${c/100}`;hint='Keep the decimal points lined up.';}
-    else{const divisor=band===7?pick(2,9):1;answer=(a*b/100+c/100)/divisor;prompt=band===7?`(${a/10} × ${b/10} + ${c/100}) ÷ ${divisor}`:`${a/10} × ${b/10} + ${c/100}`;hint='Multiply first. Then add, and divide if needed.';}
-  }else if(topic==='fractions'){
-    const den=pick(2,band<2?6:12),num=pick(1,den-1),other=den===12?11:den+1,second=pick(1,other-1);
-    if(band===0){const total=pick(1,5)*2;answer=total/2;prompt=`1/2 of ${total}`;hint='Share the number into two equal groups.';}
-    else if(band<3){const n=pick(1,den-1);answer=(num+n)/den;display=frac(num+n,den);prompt=`${num}/${den} + ${n}/${den}`;hint='Add the top numbers. Keep the bottom number.';}
-    else if(band===3){answer=num/den+second/other;display=frac(num*other+second*den,den*other);prompt=`${num}/${den} + ${second}/${other}`;hint='Find a common denominator, then add.';}
-    else if(band===4){answer=num*second/(den*other);display=frac(num*second,den*other);prompt=`${num}/${den} × ${second}/${other}`;hint='Multiply the top numbers and the bottom numbers.';}
-    else if(band===5){answer=num*other/(den*second);display=frac(num*other,den*second);prompt=`${num}/${den} ÷ ${second}/${other}`;hint='Flip the second fraction, then multiply.';}
-    else{const n=pick(1,5),d=pick(6,9),top=num*other+second*den,bottom=den*other,multiply=band===6;
-      answer=multiply?top*n/(bottom*d):top*d/(bottom*n);display=multiply?frac(top*n,bottom*d):frac(top*d,bottom*n);
-      prompt=`(${num}/${den} + ${second}/${other}) ${multiply?'×':'÷'} ${n}/${d}`;
-      hint=`Add the fractions in brackets first, then ${multiply?'multiply':'flip the last fraction and multiply'}.`;
     }
   }else if(topic==='percentage'){
     const percent=band===0?50:band<3?[10,25,50][pick(0,2)]:pick(12,85),total=pick(2,[10,20,50,100,250,500,1000,2000][band])*20;

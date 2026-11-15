@@ -1,3 +1,4 @@
+import {OPERATION_IDS,OPERATIONS} from './operations.js';
 import {topics} from './math.js';
 import {isGrade} from './grades.js';
 import {PLAYERS_KEY,playerKey} from './players.js';
@@ -23,6 +24,7 @@ function question(q){
   object(q);
   if(!Number.isFinite(q.answer)||Math.abs(q.answer)>1e12)invalid();
   const grading={};if(q.grade!=null){if(!isGrade(q.grade))invalid();grading.grade=q.grade;grading.challenge=count(q.challenge,2);}
+  if(q.operation!==undefined)grading.operation=choice(q.operation,OPERATION_IDS);
   return {...grading,topic:choice(q.topic,topicIds),level:count(q.level,2),prompt:text(q.prompt),answer:q.answer,
     display:text(String(q.display),200),hint:text(q.hint),explanation:text(q.explanation),caption:text(q.caption??'')};
 }
@@ -35,6 +37,7 @@ function session(s){
   const result={kind,adaptive:flag(s.adaptive??false),topic:choice(s.topic,[...topicIds,'mixed']),
     questions:s.questions.map(q=>q==null?null:question(q)),index,earned:count(s.earned,200),solved:count(s.solved,s.questions.length),
     resolved:flag(s.resolved),finished:flag(s.finished),hint:flag(s.hint)};
+  if(s.operation!==undefined)result.operation=choice(s.operation,OPERATIONS.map(o=>o[0]));
   if(s.level!==undefined)result.level=count(s.level,2);
   if(s.result!=null)result.result=choice(s.result,['correct','revealed']);
   else result.result=null;

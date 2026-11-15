@@ -5,12 +5,14 @@ A free, browser-based primary-school maths game with interactive pets. No AI ser
 ## Play
 
 - Choose a topic for a five-question round entirely within that topic. “More fractions”, for example, starts another fraction-only round.
-- Choose **Starting grade** (Grades 1–6) on the Play screen or in the player menu. New players can choose it when they are added. Each grade has a different starting point across all ten topics; Grade 6 begins with fraction division, multi-step arithmetic, and equations with brackets and x on both sides.
+- Choose **Starting grade** (Grades 1–6) on the Play screen or in the player menu. New players can choose it when they are added. Grade changes the size and complexity of the numbers, not access to operations. Grade 3 starts whole-number multiplication and division with facts up to 12. All topics are available at every grade.
+- In **Decimals** or **Fractions**, tap **+**, **−**, **×**, or **÷** for a round focused on that operation. **Mix** includes all four within five questions. “More decimals/fractions” keeps the chosen operation. The choice also survives refresh and save export/import.
+- Decimal division includes decimal dividends and decimal divisors, such as `1.44 ÷ 0.6 = 2.4`, from Grade 3. Earlier starting grades use decimal dividends with whole-number divisors. All generated decimal division answers terminate exactly; no rounding is needed.
 - For a selected grade, total correct answers unlock **Start** at 0–9, **Stretch** at 10–29, and **Challenge** at 30 or more. Grade 6 also has these further challenge steps. These are broad practice bands, not a formal curriculum or grade assessment.
-- Choosing a grade does not add solved problems, credits, or scores. An unanswered question refreshes immediately; an answered question keeps its original reward, and the next problem uses the chosen grade.
+- Choosing a grade does not add solved problems, credits, or scores. An unanswered question refreshes immediately; an answered question keeps its original reward, and the next problem uses the chosen grade. Changing the operation follows the same rule.
 - Existing players who have not chosen a grade keep the previous Easy/Medium/Hard progression until they choose one. Grade settings are per player and are included in save exports.
 - The next question is generated after the previous one is finished, so a level-up takes effect immediately on the next problem. The displayed question and its reward stay unchanged after refresh.
-- Correct answers earn 5, 10, or 20 credits for Easy, Medium, or Hard. Wrong, invalid, and revealed answers do not increase correct-answer totals or award credits.
+- Correct answers earn 5, 10, or 20 credits according to difficulty. Wrong, invalid, and revealed answers do not increase correct-answer totals or award credits.
 - Today's challenge gives ten mixed questions, covering all ten topics. Questions differ for each player and local calendar day. Saved challenges resume with the same shown questions and adapt future questions to the student's progress.
 - Players have separate pets, credits, and progress on this browser/device. Original saves remain available as Player 1. Profiles are device-local, not school accounts or cross-device sync.
 - Feed, stroke, dress, drag, or play ball with the pet. Pets wander on their own; hunger grows over time and feeding or play improves happiness.
