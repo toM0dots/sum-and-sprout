@@ -16,7 +16,7 @@ A browser-based primary-school maths game with interactive pets. Maths generatio
 - The next question is generated after the previous one is finished, so a level-up takes effect immediately on the next problem. The displayed question and its reward stay unchanged after refresh.
 - Correct answers earn 5, 10, or 20 credits according to difficulty. Wrong, invalid, and revealed answers do not increase correct-answer totals or award credits.
 - Today's challenge gives ten mixed questions, covering all ten topics. Questions differ for each player and local calendar day. Saved challenges resume with the same shown questions and adapt future questions to the student's progress.
-- Players have separate pets, credits, and progress on this browser/device. Original saves remain available as Player 1. Profiles are device-local, not school accounts or cross-device sync.
+- Players have separate pets, credits, and progress on this browser/device. Original saves remain available as Player 1. Free-play profiles are device-local; students with a pet login also have a private online save.
 - Feed, stroke, dress, drag, or play ball with the pet. Pets wander on their own; hunger grows over time and feeding or play improves happiness.
 
 ## Teacher dashboard and live classes
@@ -27,9 +27,9 @@ Open https://sum-and-sprout-math-pets.tom0dota.chatgpt.site/teacher.html and **S
 - Levels match each adaptive skill. Decimals and fractions show a level range and individual operation details.
 - Accuracy counts one first valid answer per question; showing an answer counts as a miss. Retries cannot inflate accuracy. Historical topic accuracy cannot be reconstructed and is shown as no data until new questions are answered.
 - Suggestions use recent results (last ten answers per skill): at least five answers and under 70% accuracy. A weak decimal/fraction operation is flagged even if that topic's overall accuracy is strong. These are practice suggestions, not formal grades.
-- Only a student's nickname, skill levels, and question outcomes are shared after joining. Pets and purchases remain on the device. The class code permits joining, not reading classmates' data.
+- The teacher sees each student's nickname, skill levels, and question outcomes. Pet logins separately keep a private full game save online. The class code permits joining, not reading classmates' data.
 - Offline play queues progress until the connection returns. Answer IDs make retries idempotent, including after restoring a save. Student save files include the private class connection so transfers keep syncing to the same student; keep those files private.
-- A student should continue with their saved game on a new device. Joining again as a different profile creates another roster entry; existing nicknames are protected from accidental reuse.
+- On a new device, students choose Student sign in with their existing nickname and private pet code. Joining again as a new student creates another roster entry; existing nicknames are protected from accidental reuse.
 
 The shared backend uses the Sites-managed D1 binding `DB`, platform-owned teacher identity, server-side class ownership checks, hashed student connection tokens, and an append-only answer ledger. No student data or connection tokens are committed to GitHub or included in site archives.
 
@@ -37,18 +37,34 @@ The shared backend uses the Sites-managed D1 binding `DB`, platform-owned teache
 
 Open the player menu (the name at the top), choose **Save a copy**, and keep the downloaded JSON file. On the other device or game link, open the player menu and choose **Load a save**, then select that file. The import adds a new player and keeps all existing players unchanged; duplicate names receive a number. Each file holds one player’s credits, pets, clothes, food, scores, daily history, and current question.
 
-Game progress is saved automatically in this browser; transferring pets and purchases is manual. Joined classroom results sync automatically to the teacher dashboard. Keep a recent copy before clearing browser data or changing devices. Use a nickname.
+Game progress is saved automatically in this browser. Students with a pet login also save online and can sign in on another device; save files remain an optional backup or transfer method. Wait for ✓ Saved online before switching devices. Use a nickname.
 
 ## Run and check
 
-Serve this folder with any static web server for the student game. Teacher sign-in and classroom syncing use the deployed Sites backend; local static hosting alone does not provide a classroom API.
+Node.js 24 or newer is needed for the local classroom preview and database tests. Serve this repository root for a static game preview. Classroom and student-login requests use the published Sites backend when served on a public host. The canonical Sites checkout also includes a local database preview; it is not part of this Pages-only distribution.
 
-Run `npm test` with Node.js 24 or newer. Tests exercise the Worker against local in-memory SQLite, including class ownership, syncing, retries, and accuracy. `worker/`, `db/`, and `drizzle/` contain the backend source and migrations for review; GitHub Pages does not execute them.
+Run `npm test`. The checks cover generated arithmetic, adaptation, portable saves, classroom ownership, first-try measurement, offline retry deduplication, CORS restrictions, and practice suggestions.
 
-## GitHub Pages and classroom hosting
+Database schema lives in `db/schema.cjs`; `npm run db:generate` creates immutable Drizzle migrations. Install the pinned development dependencies before generating a new migration. Preview applies only migrations missing from its local database. Sites applies hosted migrations during publication.
 
-Publish the `main` branch from `/ (root)` in Settings → Pages. `.nojekyll` preserves static files. The student game remains at https://tom0dots.github.io/sum-and-sprout/.
+## Publication
 
-The teacher dashboard and shared database run at https://sum-and-sprout-math-pets.tom0dota.chatgpt.site/teacher.html. The GitHub dashboard entry point opens that authenticated host. No OpenAI API or key is used. Backend source lives in the separate Sites checkout and is published through the Sites workflow.
+The existing Sites project serves the game and classroom API through an ESM Worker built from its separate canonical checkout. This Pages repository includes the backend source and migrations for review and tests; GitHub Pages serves only static files. Publish through the Sites source workflow, retaining the same project and public audience. The teacher report API requires authenticated class ownership despite the public game.
 
-Never commit local environment files, classroom connection tokens, student records, or preview databases. The shared database is not part of this repository.
+GitHub Pages contains the static student game and a dashboard entry point that opens the authenticated Sites dashboard. Both origins share the same classroom backend. Never copy `.dev.vars`, environment files, `.preview/`, or student records into an archive or repository.
+
+## Student pet logins
+
+Students join their class with a nickname, then receive a private **pet code**. On another device they choose **Student sign in** and enter the class code, nickname and pet code. No student email or ChatGPT account is needed. The existing ChatGPT teacher sign-in is unchanged.
+
+A full game save travels with the login: pets, hunger/happiness, food, clothes, credits, grade, adaptive skill levels, statistics, daily seed, daily history and the current question. The student should wait for **✓ Saved online** before switching devices. Local free play and save-file export/import remain available.
+
+- An existing class member chooses **Save pet online** to keep their current local progress. New members get a login card during joining.
+- The teacher opens a student in the dashboard and chooses **Reset pet code** if a code is lost. Resetting preserves the last online save and invalidates all previous sessions and enrollment tokens. Unsynced work on an old device must be recovered separately.
+- **Sign out on this device** removes that student's local profile, session and recovery copy after their online save completes. Students should sign out on shared devices.
+- Pet codes are generated from 16 random base-32 characters (80 bits), shown once, and stored server-side only as SHA-256 hashes. They are not low-entropy, user-chosen passwords. Do not share a student's code publicly.
+- Each login receives a 256-bit bearer session, hashed in D1, expiring after 30 days. Student sessions can read/write only that student's game and answer events. Teacher recovery checks class ownership and same-origin requests. Login attempts have a shared database-backed rate limit.
+- Cloud saves use optimistic revisions and stable mutation IDs. A failed acknowledgement can be retried without duplicating the save. An older device cannot silently overwrite a newer revision. The student chooses between the two versions, with a local recovery copy retained; offline progress is not automatically merged.
+- Teacher accuracy is still based on the deduplicated first-attempt event ledger, not on client credit totals or the game snapshot. Full saves and credentials never appear in the teacher's report or public assets.
+
+The appended `0001_early_ink.sql` migration adds student accounts, sessions and login-rate counters. Existing classes and students are retained. The Worker build packages the same save validator used by the browser; no API key or third-party identity provider is required.

@@ -1,3 +1,4 @@
+import {studentAuth,studentAPI,resetStudent} from './student.js';
 const TOPICS=['addition','subtraction','multiplication','division','decimals','fractions','percentage','ratios','tricks','equations'];
 const KEYS=TOPICS.flatMap(t=>['decimals','fractions'].includes(t)?['add','subtract','multiply','divide'].map(op=>`${t}:${op}`):[t]).concat(['decimals','fractions']);
 const GITHUB_ORIGIN='https://tom0dots.github.io';
@@ -80,6 +81,10 @@ export function createWorker(assets={}){return {async fetch(request,env){
     }else if(/^\/api\/teacher\/classes\/[^/]+$/.test(path)&&request.method==='PATCH'){
       const user=teacherWrite(request),id=path.split('/').at(-1),c=await ownedClass(env.DB,id,user.id),data=await body(request);
       if(typeof data.open!=='boolean')fail('Choose whether joining is open.');await env.DB.prepare('UPDATE classes SET open=? WHERE id=? AND owner_id=?').bind(Number(data.open),c.id,user.id).run();response=json({open:data.open});
+    }else if(/^\/api\/teacher\/students\/[^/]+\/reset-login$/.test(path)&&request.method==='POST'){
+      const user=teacherWrite(request);response=await resetStudent(env.DB,path.split('/')[4],user.id,await body(request));
+    }else if(['/api/classroom/account','/api/classroom/login','/api/classroom/load','/api/classroom/save','/api/classroom/logout'].includes(path)&&request.method==='POST'){
+      response=await studentAPI(path,request,env.DB);
     }else if(path==='/api/classroom/join'&&request.method==='POST'){
       const data=await body(request);if(!tokenValid(data.token))fail('Please try joining again.');
       const code=text(data.code,10),name=text(data.name,24),baseline=cleanBaseline(data.baseline),tokenHash=await hash(data.token);
@@ -96,7 +101,7 @@ export function createWorker(assets={}){return {async fetch(request,env){
     }else if(path==='/api/classroom/sync'&&request.method==='POST'){
       const token=request.headers.get('Authorization')?.replace(/^Bearer /,'');if(!tokenValid(token))fail('Class connection not found.',401);
       const data=await body(request),events=cleanEvents(data.events),tokenHash=await hash(token);
-      const student=await env.DB.prepare('SELECT id FROM students WHERE id=? AND token_hash=?').bind(text(data.studentId,64),tokenHash).first();if(!student)fail('Class connection not found.',401);
+      const student=await studentAuth(env.DB,request,data.studentId);
       const now=Date.now();
       const statements=events.map(e=>env.DB.prepare('INSERT INTO events (student_id,event_id,skill,correct,level,occurred_at,received_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(student_id,event_id) DO NOTHING').bind(student.id,e.id,e.skill,e.correct,e.level,e.at,now));
       statements.push(env.DB.prepare('UPDATE students SET updated_at=? WHERE id=?').bind(now,student.id));await env.DB.batch(statements);
