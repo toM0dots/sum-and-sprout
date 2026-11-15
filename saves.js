@@ -1,4 +1,5 @@
 import {topics} from './math.js';
+import {isGrade} from './grades.js';
 import {PLAYERS_KEY,playerKey} from './players.js';
 
 export const MAX_SAVE_BYTES=500000;
@@ -21,7 +22,8 @@ function dictionary(value,keys,read){
 function question(q){
   object(q);
   if(!Number.isFinite(q.answer)||Math.abs(q.answer)>1e12)invalid();
-  return {topic:choice(q.topic,topicIds),level:count(q.level,2),prompt:text(q.prompt),answer:q.answer,
+  const grading={};if(q.grade!=null){if(!isGrade(q.grade))invalid();grading.grade=q.grade;grading.challenge=count(q.challenge,2);}
+  return {...grading,topic:choice(q.topic,topicIds),level:count(q.level,2),prompt:text(q.prompt),answer:q.answer,
     display:text(String(q.display),200),hint:text(q.hint),explanation:text(q.explanation),caption:text(q.caption??'')};
 }
 function session(s){
@@ -49,6 +51,7 @@ function session(s){
 }
 function cleanState(value){
   const s=object(value),result={};
+  if(s.grade!=null){if(!isGrade(s.grade))invalid();result.grade=s.grade;}else result.grade=null;
   for(const key of ['credits','earned','correct','attempts','streak','best'])result[key]=count(s[key]);
   result.pet=choice(s.pet,pets);
   result.care=dictionary(s.care,pets,v=>number(v,100));

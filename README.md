@@ -5,7 +5,10 @@ A free, browser-based primary-school maths game with interactive pets. No AI ser
 ## Play
 
 - Choose a topic for a five-question round entirely within that topic. “More fractions”, for example, starts another fraction-only round.
-- Difficulty follows each player's total correct answers across all topics: Easy at 0–9, Medium at 10–29, and Hard at 30 or more.
+- Choose **Starting grade** (Grades 1–6) on the Play screen or in the player menu. New players can choose it when they are added. Each grade has a different starting point across all ten topics; Grade 6 begins with fraction division, multi-step arithmetic, and equations with brackets and x on both sides.
+- For a selected grade, total correct answers unlock **Start** at 0–9, **Stretch** at 10–29, and **Challenge** at 30 or more. Grade 6 also has these further challenge steps. These are broad practice bands, not a formal curriculum or grade assessment.
+- Choosing a grade does not add solved problems, credits, or scores. An unanswered question refreshes immediately; an answered question keeps its original reward, and the next problem uses the chosen grade.
+- Existing players who have not chosen a grade keep the previous Easy/Medium/Hard progression until they choose one. Grade settings are per player and are included in save exports.
 - The next question is generated after the previous one is finished, so a level-up takes effect immediately on the next problem. The displayed question and its reward stay unchanged after refresh.
 - Correct answers earn 5, 10, or 20 credits for Easy, Medium, or Hard. Wrong, invalid, and revealed answers do not increase correct-answer totals or award credits.
 - Today's challenge gives ten mixed questions, covering all ten topics. Questions differ for each player and local calendar day. Saved challenges resume with the same shown questions and adapt future questions to the student's progress.
