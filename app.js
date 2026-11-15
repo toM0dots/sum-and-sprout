@@ -1,3 +1,4 @@
+import {joinClass,syncClass,teacherURL} from './classroom.js';
 import {advanceNeeds,feedNeeds,playNeeds} from './pet-needs.js';
 import {setupPets, reactPet, playPet, updatePetNeeds} from './pets.js';
 import {topics,levels} from './math.js';
@@ -17,7 +18,7 @@ let state=fresh(),saveFailed=false;
 try{const s=JSON.parse(localStorage.getItem(key));if(s&&typeof s.credits==='number'&&pets.some(p=>p.id===s.pet))state={...state,...s}}catch{}
 let stopPets;
 let page='learn',filter='all',shopTab='all',feedback='',toastTimer;
-function save(){prepareSession(state);archiveDaily(state);advanceNeeds(state);try{localStorage.setItem(key,JSON.stringify(state))}catch{saveFailed=true}}
+function save(){prepareSession(state);archiveDaily(state);advanceNeeds(state);try{localStorage.setItem(key,JSON.stringify(state))}catch{saveFailed=true}queueClassSync(state,key);}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const coin='<span class="coin" aria-hidden="true">✦</span>';
 function icon(name){const paths={learn:'M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4z M13 7a3 3 0 0 1 3-3h5v15h-4a4 4 0 0 0-4 2',home:'m3 11 9-8 9 8 M5 10v11h14V10 M9 21v-7h6v7',shop:'M4 9h16v12H4z M3 9l2-6h14l2 6 M8 3l-1 6 M16 3l1 6 M9 21v-7h6v7',chart:'M4 20V10h4v10 M10 20V4h4v16 M16 20v-7h4v7',arrow:'M5 12h14 m-5-5 5 5-5 5',leaf:'M19 4C6 2 2 11 7 16s14-1 12-12 M5 21 15 9',heart:'M12 21 3 12C-2 5 7 0 12 6c5-6 14-1 9 6z',check:'m5 12 4 4L19 6'};return `<svg viewBox="0 0 24 24" class="icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.leaf}"/></svg>`}
@@ -32,7 +33,7 @@ function render(){prepareSession(state);advanceNeeds(state);stopPets?.();$('#app
 function levelPicker(){return `<div class="auto-level"><div><strong>🌱 Adapts to you</strong><span>${state.correct} solved</span></div><small>3 right in a row → harder · 2 misses → easier</small></div>`}
 function difficultyNotice(s){return s.difficultyChange===1?'<small class="level-up">Level up for this skill! ⭐</small>':s.difficultyChange===-1?'<small class="level-up">Let’s try a gentler level 💛</small>':'';}
 
-function learn(){return `<section class="hero"><div class="hero-copy"><h1>Math time!</h1><p>Solve → Earn → Play</p><button class="primary" data-daily>${dailyLabel()}</button><span class="round-note">10 mixed questions · New each day</span><button class="text-button practice-free" data-mixed>Mixed practice →</button></div>${habitat()}</section><section class="topics-section"><div class="section-heading grade-heading"><h2>Your level</h2>${gradePicker()}</div>${levelPicker()}<div class="section-heading"><h2>Pick a topic</h2></div><div class="topic-grid">${topics.map(t=>`<button class="topic-card" data-topic="${t[0]}"><span class="topic-symbol" style="background:${t[4]}">${t[2]}</span><h3>${t[1]}</h3>${hasOperations(t[0])?'<small class="topic-operations">+ − × ÷</small>':''}</button>`).join('')}</div></section>`}
+function learn(){return `<section class="hero"><div class="hero-copy"><h1>Math time!</h1><p>Solve → Earn → Play</p><button class="primary" data-daily>${dailyLabel()}</button><span class="round-note">10 mixed questions · New each day</span><button class="text-button practice-free" data-mixed>Mixed practice →</button></div>${habitat()}</section><section class="topics-section"><div class="section-heading grade-heading"><h2>Your level</h2>${gradePicker()}</div>${levelPicker()}${classConnection()}<div class="section-heading"><h2>Pick a topic</h2></div><div class="topic-grid">${topics.map(t=>`<button class="topic-card" data-topic="${t[0]}"><span class="topic-symbol" style="background:${t[4]}">${t[2]}</span><h3>${t[1]}</h3>${hasOperations(t[0])?'<small class="topic-operations">+ − × ÷</small>':''}</button>`).join('')}</div></section>`}
 
 function start(topic,operation='mixed'){state.session=createPractice(topic,state.correct,state.grade,operation,state.learning);feedback='';save();render();focusAnswer();}
 function focusAnswer(){setTimeout(()=>$('#answer')?.focus(),20)}
@@ -47,7 +48,7 @@ function progress(){return `<h1>My stars ⭐</h1><div class="progress-cards">${[
 
 
 function check(event){event.preventDefault();const result=submitAnswer(state,$('#answer').value);if(result.status==='ignored')return;if(result.status==='invalid'){feedback='Type a number, like 12 or 1/2.';$('#feedback').textContent=feedback;return}save();if(result.status==='correct'){render();$('.next')?.focus();}else{feedback='Try again 💛';render();$('#answer').focus();$('#answer').select();}}
-function bind(){bindGradeControls($('#app'));document.querySelectorAll('[data-operation]').forEach(b=>b.onclick=()=>{if(setOperation(state,b.dataset.operation)){feedback='';save();render();focusAnswer();}});$('[data-again]')?.addEventListener('click',()=>start(state.session.topic,state.session.operation||'mixed'));$('[data-players]')?.addEventListener('click',showPlayers);$('[data-daily]')?.addEventListener('click',startDaily);$('[data-play-pet]')?.addEventListener('click',playPet);document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();page=b.dataset.page;render();window.scrollTo(0,0)});document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;render()});document.querySelectorAll('[data-topic]').forEach(b=>b.onclick=()=>{page='learn';start(b.dataset.topic);window.scrollTo(0,0)});$('[data-mixed]')?.addEventListener('click',()=>start('mixed'));$('#answer-form')?.addEventListener('submit',check);
+function bind(){$('[data-join-class]')?.addEventListener('click',()=>showClassroom());bindGradeControls($('#app'));document.querySelectorAll('[data-operation]').forEach(b=>b.onclick=()=>{if(setOperation(state,b.dataset.operation)){feedback='';save();render();focusAnswer();}});$('[data-again]')?.addEventListener('click',()=>start(state.session.topic,state.session.operation||'mixed'));$('[data-players]')?.addEventListener('click',showPlayers);$('[data-daily]')?.addEventListener('click',startDaily);$('[data-play-pet]')?.addEventListener('click',playPet);document.querySelectorAll('[data-page]').forEach(b=>b.onclick=e=>{e.preventDefault();page=b.dataset.page;render();window.scrollTo(0,0)});document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;render()});document.querySelectorAll('[data-topic]').forEach(b=>b.onclick=()=>{page='learn';start(b.dataset.topic);window.scrollTo(0,0)});$('[data-mixed]')?.addEventListener('click',()=>start('mixed'));$('#answer-form')?.addEventListener('submit',check);
 $('[data-hint]')?.addEventListener('click',()=>{state.session.hint=true;save();render();focusAnswer()});$('[data-reveal]')?.addEventListener('click',()=>{showAnswer(state);save();render();$('.next')?.focus()});$('[data-next]')?.addEventListener('click',()=>{nextQuestion(state);feedback='';save();render();focusAnswer()});$('[data-pause]')?.addEventListener('click',()=>{const s=state.session;const modal=$('#modal');modal.innerHTML=`<h2>Go back?</h2><p>${s.kind==='daily'?'Come back and finish later.':'Your credits are safe.'}</p><div class="button-row"><button class="secondary" id="keep-going">Stay</button><button class="primary" id="end-round">Go back</button></div>`;modal.showModal();$('#keep-going').onclick=()=>modal.close();$('#end-round').onclick=()=>{state.session=null;feedback='';save();modal.close();render()}});
 document.querySelectorAll('[data-finish]').forEach(b=>b.onclick=()=>{state.session=null;page=b.dataset.finish;save();render()});document.querySelectorAll('[data-pet]').forEach(b=>b.onclick=()=>{state.pet=b.dataset.pet;save();render();toast(`Hello, ${pets.find(p=>p.id===state.pet).name}!`)});document.querySelectorAll('[data-shop-tab]').forEach(b=>b.onclick=()=>{shopTab=b.dataset.shopTab;render()});document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const p=products.find(p=>p.id===b.dataset.buy);if(state.credits<p.price||state.owned.includes(p.id))return;state.credits-=p.price;if(p.type==='food')state.food[p.id]=(state.food[p.id]||0)+1;else state.owned.push(p.id);save();render();toast(`Got it! ${p.emoji}`)});document.querySelector('[data-wear="none"]')?.addEventListener('click',()=>dressPet('none'));}
 
@@ -64,7 +65,7 @@ document.addEventListener('visibilitychange',tickNeeds);
 window.addEventListener('pagehide',()=>save());
 
 
-window.addEventListener('storage',event=>{if(event.key!==key||!event.newValue)return;try{const incoming=JSON.parse(event.newValue);if(typeof incoming.credits!=='number'||!pets.some(p=>p.id===incoming.pet))return;const visibleData=s=>JSON.stringify([s.learning,s.grade,s.credits,s.earned,s.correct,s.streak,s.best,s.pet,s.food,s.owned,s.wear,s.stats,s.session,s.daily]);const changed=visibleData(state)!==visibleData(incoming);state={...fresh(),...incoming};advanceNeeds(state);if(changed)render();else refreshCare();}catch{}});
+window.addEventListener('storage',event=>{if(event.key!==key||!event.newValue)return;try{const incoming=JSON.parse(event.newValue);if(typeof incoming.credits!=='number'||!pets.some(p=>p.id===incoming.pet))return;const visibleData=s=>JSON.stringify([s.classroom,s.reporting,s.learning,s.grade,s.credits,s.earned,s.correct,s.streak,s.best,s.pet,s.food,s.owned,s.wear,s.stats,s.session,s.daily]);const changed=visibleData(state)!==visibleData(incoming);state={...fresh(),...incoming};advanceNeeds(state);if(changed)render();else refreshCare();}catch{}});
 
 function dailyLabel(){const saved=state.daily?.[`${dayKey()}:auto`];return saved?.finished?'✓ Today is done':saved?'☀ Keep going':'☀ Today’s challenge';}
 function startDaily(){const date=dayKey();state.session=state.daily?.[`${date}:auto`]||createDaily(active.seed||active.id,date,state.correct,state.grade,state.learning);feedback='';save();render();focusAnswer();}
@@ -77,9 +78,10 @@ function switchPlayer(id){
 function showPlayers(){
   players=readPlayers(localStorage);
   const modal=$('#modal');
-  modal.innerHTML=`<h2>Who’s playing?</h2><section class="player-grade">${gradePicker()}<small>For ${esc(active.name)}</small></section><div class="player-list">${players.map(p=>`<button class="secondary ${p.id===active.id?'current-player':''}" data-player-id="${p.id}">👤 ${esc(p.name)} ${p.id===active.id?'✓':''}</button>`).join('')}</div><form id="new-player"><label for="player-name">New player</label><div class="new-player-row"><input id="player-name" maxlength="24" required placeholder="Nickname" autocomplete="off"><button class="primary">＋ Add</button></div><label class="new-grade-label" for="new-player-grade">Starting grade</label><select id="new-player-grade" class="grade-select">${GRADES.map(g=>`<option value="${g}">Grade ${g}</option>`).join('')}</select><p id="player-error" role="status"></p></form><section class="save-transfer" aria-label="Move progress"><h3>Take your progress</h3><p>Save a copy for another device.</p><div class="button-row"><button class="secondary" id="export-save">↓ Save a copy</button><button class="secondary" id="import-save">↑ Load a save</button></div><input type="file" id="save-file" accept=".json,application/json" hidden><p id="save-message" role="status"></p><small>Loading adds a player. No saves are erased.</small></section><button class="text-button" id="close-players">Close</button>`;
+  modal.innerHTML=`<h2>Who’s playing?</h2><section class="player-grade">${gradePicker()}<small>For ${esc(active.name)}</small></section><div class="player-list">${players.map(p=>`<button class="secondary ${p.id===active.id?'current-player':''}" data-player-id="${p.id}">👤 ${esc(p.name)} ${p.id===active.id?'✓':''}</button>`).join('')}</div><form id="new-player"><label for="player-name">New player</label><div class="new-player-row"><input id="player-name" maxlength="24" required placeholder="Nickname" autocomplete="off"><button class="primary">＋ Add</button></div><label class="new-grade-label" for="new-player-grade">Starting grade</label><select id="new-player-grade" class="grade-select">${GRADES.map(g=>`<option value="${g}">Grade ${g}</option>`).join('')}</select><p id="player-error" role="status"></p></form><section class="save-transfer" aria-label="Move progress"><h3>Take your progress</h3><p>Save a copy for another device.</p><div class="button-row"><button class="secondary" id="export-save">↓ Save a copy</button><button class="secondary" id="import-save">↑ Load a save</button></div><input type="file" id="save-file" accept=".json,application/json" hidden><p id="save-message" role="status"></p><small>Loading adds a player. Keep save files private.</small></section><section class="save-transfer"><h3>My class</h3><button class="secondary" id="player-class">${state.classroom?esc(state.classroom.className):'Join my class'}</button><p><a href="${teacherURL()}" target="_blank" rel="noopener">Teacher dashboard ↗</a></p></section><button class="text-button" id="close-players">Close</button>`;
   modal.querySelectorAll('[data-player-id]').forEach(button=>button.onclick=()=>switchPlayer(button.dataset.playerId));
   $('#close-players').onclick=()=>modal.close();
+  $('#player-class').onclick=()=>{modal.close();showClassroom();};
   $('#new-player').onsubmit=event=>{event.preventDefault();try{
     if(players.length>=40)throw new Error('This device has 40 players already.');
     const grade=Number($('#new-player-grade').value);
@@ -120,3 +122,34 @@ function operationPicker(s){
   if(s.kind!=='practice'||!hasOperations(s.topic)||s.finished)return '';
   return `<div class="operation-picker" role="group" aria-label="${s.topic==='decimals'?'Decimal':'Fraction'} operations">${OPERATIONS.map(([id,symbol,name])=>`<button class="secondary" data-operation="${id}" aria-label="${name}" title="${name}" aria-pressed="${(s.operation||'mixed')===id}">${symbol}</button>`).join('')}${s.resolved?'<small>For the next question</small>':''}</div>`;
 }
+
+function classConnection(){return `<div class="class-connection"><div><button class="secondary" data-join-class>${state.classroom?'✓ '+esc(state.classroom.className):'Join my class'}</button>${state.classroom?'<small data-class-status>Class connected</small>':''}</div><a href="${teacherURL()}" target="_blank" rel="noopener">Teacher dashboard ↗</a></div>`;}
+function queueClassSync(target,targetKey){
+  if(!target.classroom)return;
+  queueMicrotask(()=>syncClass(target,accepted=>{
+    try{
+      // An acknowledgement must not overwrite newer game progress from another tab.
+      const latest=JSON.parse(localStorage.getItem(targetKey)||'null'),ids=new Set(accepted);
+      if(latest?.classroom?.token===target.classroom.token&&latest.reporting){
+        latest.reporting.pending=latest.reporting.pending.filter(e=>!ids.has(e.id));
+        localStorage.setItem(targetKey,JSON.stringify(latest));
+        if(key===targetKey&&state!==target&&state.reporting)state.reporting.pending=state.reporting.pending.filter(e=>!ids.has(e.id));
+      }
+    }catch{saveFailed=true;}
+  },message=>{if(state===target)document.querySelectorAll('[data-class-status]').forEach(el=>el.textContent=message);}));
+}
+function showClassroom(code=''){
+  const modal=$('#modal'),target=state,targetKey=key;
+  if(target.classroom){modal.innerHTML=`<h2>✓ ${esc(target.classroom.className)}</h2><p>Your results sync with your teacher.</p><p data-class-status>Class connected</p><button class="primary" id="close-class">Keep playing →</button>`;modal.showModal();$('#close-class').onclick=()=>modal.close();queueClassSync(target,targetKey);return;}
+  modal.innerHTML=`<form class="class-form" id="join-class-form"><h2>Join my class</h2><p>Your teacher can see your nickname and maths progress.</p><label>Class code<input id="class-code" required maxlength="14" autocomplete="off" value="${esc(target.joinDraft?.code||code)}" placeholder="10-letter code"></label><label>Your nickname<input id="class-nickname" required maxlength="24" autocomplete="nickname" value="${esc(target.joinDraft?.name||(active.name==='Player 1'?'':active.name))}" placeholder="e.g. Alex T"></label><p id="class-message" role="status"></p><div class="button-row"><button type="button" class="secondary" id="cancel-join">Later</button><button class="primary">Join class →</button></div></form>`;
+  modal.showModal();$('#cancel-join').onclick=()=>modal.close();
+  $('#join-class-form').onsubmit=async event=>{
+    event.preventDefault();const button=event.submitter,message=$('#class-message');button.disabled=true;message.textContent='Joining…';
+    const persist=()=>{try{localStorage.setItem(targetKey,JSON.stringify(target));}catch{saveFailed=true;}};
+    try{await joinClass(target,$('#class-code').value,$('#class-nickname').value,persist);if(state===target){modal.close();render();toast('Class connected! 🌱');}queueClassSync(target,targetKey);}
+    catch(error){message.textContent=error.message||'Couldn’t connect. Try again when online.';}finally{button.disabled=false;}
+  };
+}
+window.addEventListener('online',()=>queueClassSync(state,key));
+const requestedClass=new URLSearchParams(location.search).get('class');
+if(requestedClass&&!state.classroom)setTimeout(()=>showClassroom(requestedClass),50);

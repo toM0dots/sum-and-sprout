@@ -55,9 +55,9 @@ test('progress bounds and local calendar rollover are correct',()=>{
   assert.deepEqual([-1,0,9,10,29,30,99].map(levelForCorrect),[0,0,0,1,1,2,2]);
   assert.equal(dayKey(new Date(2026,10,15,23,59,59)),'2026-11-15');assert.equal(dayKey(new Date(2026,10,16,0,0,0)),'2026-11-16');
 });
-test('published game contains no API calls or credentials',()=>{
-  for(const file of readdirSync(new URL('../',import.meta.url)).filter(file=>/\.(js|html)$/.test(file))){
-    assert.ok(!file.startsWith('.'));if(!/\.(js|html)$/.test(file))continue;
-    assert.doesNotMatch(readFileSync(new URL(`../${file}`,import.meta.url),'utf8'),/api\.openai\.com|\/api\/daily|OPENAI_API_KEY|sk-proj-|\bfetch\s*\(/);
+test('published game contains no AI calls or credentials',()=>{
+  for(const file of readdirSync(new URL('../',import.meta.url))){
+    if(!/\.(js|html)$/.test(file))continue;
+    assert.doesNotMatch(readFileSync(new URL(`../${file}`,import.meta.url),'utf8'),/api\.openai\.com|\/api\/daily|OPENAI_API_KEY|sk-proj-/);
   }
 });

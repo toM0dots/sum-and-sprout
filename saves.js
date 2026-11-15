@@ -1,10 +1,11 @@
+import {cleanReporting,cleanClassroom} from './reporting.js';
 import {SKILL_KEYS} from './learning.js';
 import {OPERATION_IDS,OPERATIONS} from './operations.js';
 import {topics} from './math.js';
 import {isGrade} from './grades.js';
 import {PLAYERS_KEY,playerKey} from './players.js';
 
-export const MAX_SAVE_BYTES=500000;
+export const MAX_SAVE_BYTES=2000000;
 const pets=['fox','bunny','cat','bear'];
 const clothes=['scarf','bow','hat','sweater','crown'];
 const topicIds=topics.map(t=>t[0]);
@@ -67,6 +68,8 @@ function cleanState(value){
       if(skill.right&&skill.wrong)invalid();return skill;
     })};
   }
+  if(s.reporting!==undefined)result.reporting=cleanReporting(s.reporting);
+  if(s.classroom!==undefined)result.classroom=cleanClassroom(s.classroom);
   result.pet=choice(s.pet,pets);
   result.care=dictionary(s.care,pets,v=>number(v,100));
   result.happiness=dictionary(s.happiness??{},pets,v=>number(v,100));

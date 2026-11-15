@@ -1,3 +1,4 @@
+import {recordMeasurement,recordLevelReset} from './reporting.js';
 import {createLearning,prepareLearning,learningSkill,skillKey,recordOutcome} from './learning.js';
 import {hasOperations,validOperation,OPERATION_IDS} from './operations.js';
 import {topics,levels,seededRandom,matches,parseAnswer} from './math.js';
@@ -12,7 +13,7 @@ export function questionLabel(q){if(Number.isInteger(q.band))return `Level ${q.b
 export function setGrade(state,grade){
   if(!isGrade(grade))throw new Error('Choose a grade from 1 to 6.');
   if(state.grade===grade)return;
-  state.grade=grade;state.learning=createLearning(0,grade);
+  state.grade=grade;state.learning=createLearning(0,grade);recordLevelReset(state);
   // An explicit setting change refreshes only an unanswered question, never a rewarded one.
   const s=state.session;
   if(s&&!s.finished&&!s.resolved){s.questions[s.index]=null;resetAssessment(s);ensureQuestion(s,state.correct,grade,state.learning);}
@@ -73,7 +74,7 @@ export function submitAnswer(state,value){
   if(!Number.isFinite(parseAnswer(value)))return {status:'invalid'};
   const q=ensureQuestion(s,state.correct,state.grade,prepareLearning(state));state.attempts++;
   const correct=matches(value,q.answer);
-  if(!s.assessed){s.difficultyChange=recordOutcome(state,q,correct);s.assessed=true;}
+  if(!s.assessed){s.difficultyChange=recordOutcome(state,q,correct);recordMeasurement(state,q,correct);s.assessed=true;}
   if(!correct){state.streak=0;return {status:'wrong'};}
   const reward=levels[q.level].reward;
   state.credits+=reward;state.earned+=reward;state.correct++;state.streak++;
@@ -83,7 +84,7 @@ export function submitAnswer(state,value){
 }
 export function showAnswer(state){
   const s=state.session;if(!s||s.resolved||s.finished)return false;
-  if(!s.assessed){const q=ensureQuestion(s,state.correct,state.grade,prepareLearning(state));s.difficultyChange=recordOutcome(state,q,false);s.assessed=true;}
+  if(!s.assessed){const q=ensureQuestion(s,state.correct,state.grade,prepareLearning(state));s.difficultyChange=recordOutcome(state,q,false);recordMeasurement(state,q,false);s.assessed=true;}
   s.resolved=true;s.result='revealed';state.streak=0;return true;
 }
 export function nextQuestion(state){
